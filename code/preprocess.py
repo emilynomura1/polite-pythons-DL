@@ -48,17 +48,17 @@ def build_vocab(sentences):
     for s in sentences: 
         tokens.extend(s)
     all_words = sorted(list(set([STOP_TOKEN,PAD_TOKEN,UNK_TOKEN] + tokens)))
-    flat_list = [item for sublist in sentences for item in sublist]
+    # flat_list = [item for sublist in sentences for item in sublist]
     
-    x = Counter(flat_list)
-    y = dict((k,v) for k,v in x.items() if v>2)
-    keep_words = list(y.keys())
-    all_words_new = []
-    for word in all_words:
-        if word in keep_words:
-            all_words_new.append(word)
-    vocab =  {word:i for i,word in enumerate(all_words_new)}
-    vocab["*UNK*"] = len(vocab)
+    # x = Counter(flat_list)
+    # y = dict((k,v) for k,v in x.items() if v>2)
+    # keep_words = list(y.keys())
+    # all_words_new = []
+    # for word in all_words:
+    #     if word in keep_words:
+    #         all_words_new.append(word)
+    vocab =  {word:i for i,word in enumerate(all_words)}
+    # vocab["*UNK*"] = len(vocab)
     return vocab, vocab[PAD_TOKEN]
 
 def convert_to_id(vocab, sentences):
@@ -111,29 +111,29 @@ def get_data(non_polite_training_file, polite_training_file, non_polite_test_fil
     non_polite_test = read_data(non_polite_test_file)
     polite_test = read_data(polite_test_file)
     
-    tr_length = []
-    for i in non_polite_train:
-        tr_length.append(len(i))
-    tr_length_arr = np.array(tr_length)
-    train_ind = np.where(tr_length_arr<=50)[0]
-    non_polite_train = np.asarray(non_polite_train)
-    non_polite_train = non_polite_train[train_ind]
-    polite_train = np.asarray(polite_train)
-    polite_train = polite_train[train_ind]
+    # tr_length = []
+    # for i in non_polite_train:
+    #     tr_length.append(len(i))
+    # tr_length_arr = np.array(tr_length)
+    # train_ind = np.where(tr_length_arr<=50)[0]
+    # non_polite_train = np.asarray(non_polite_train)
+    # non_polite_train = non_polite_train[train_ind]
+    # polite_train = np.asarray(polite_train)
+    # polite_train = polite_train[train_ind]
     # test_length = []
     # for sentence in polite_train:
     #     test_length.append(len(sentence))
     # print(max(test_length))
 
-    te_length = []
-    for i in non_polite_test:
-        te_length.append(len(i))
-    te_length_arr = np.array(te_length)
-    test_ind = np.where(te_length_arr<=50)[0]
-    non_polite_test = np.asarray(non_polite_test)
-    non_polite_test = non_polite_test[test_ind]
-    polite_test = np.asarray(polite_test)
-    polite_test = polite_test[test_ind]
+    # te_length = []
+    # for i in non_polite_test:
+    #     te_length.append(len(i))
+    # te_length_arr = np.array(te_length)
+    # test_ind = np.where(te_length_arr<=50)[0]
+    # non_polite_test = np.asarray(non_polite_test)
+    # non_polite_test = non_polite_test[test_ind]
+    # polite_test = np.asarray(polite_test)
+    # polite_test = polite_test[test_ind]
     # test_length = []
     # for sentence in polite_test:
     #     test_length.append(len(sentence))

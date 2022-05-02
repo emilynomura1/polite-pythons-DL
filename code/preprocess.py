@@ -1,17 +1,17 @@
 import numpy as np
 import tensorflow as tf
-import numpy as np
 from collections import Counter
 #from attenvis import AttentionVis
 #av = AttentionVis()
+from change_data import change_data
 
 ##########DO NOT CHANGE#####################
 PAD_TOKEN = "*PAD*"
 STOP_TOKEN = "*STOP*"
 START_TOKEN = "*START*"
 UNK_TOKEN = "*UNK*"
-NON_POLITE_WINDOW_SIZE = 50
-POLITE_WINDOW_SIZE = 79
+NON_POLITE_WINDOW_SIZE = 52
+POLITE_WINDOW_SIZE = 52
 ##########DO NOT CHANGE#####################
 
 def pad_corpus(non_polite, polite):
@@ -73,20 +73,20 @@ def convert_to_id(vocab, sentences):
     return np.stack([[vocab[word] if word in vocab else vocab[UNK_TOKEN] for word in sentence] for sentence in sentences])
 
 
-def read_data(file_name):
-	"""
-	DO NOT CHANGE
-    Load text data from file
-	:param file_name:  string, name of data file
-	:return: list of sentences, each a list of words split on whitespace
-    """
-	text = []
-	with open(file_name, 'rt', encoding='latin') as data_file:
-		for line in data_file: text.append(line.split())
-	return text
+# def read_data(file_name):
+# 	"""
+# 	DO NOT CHANGE
+#     Load text data from file
+# 	:param file_name:  string, name of data file
+# 	:return: list of sentences, each a list of words split on whitespace
+#     """
+# 	text = []
+# 	with open(file_name, 'rt', encoding='latin') as data_file:
+# 		for line in data_file: text.append(line.split())
+# 	return text
 
 #@av.get_data_func
-def get_data(non_polite_training_file, polite_training_file, non_polite_test_file, polite_test_file):
+def get_data():
     """
 	Use the helper functions in this file to read and parse training and test data, then pad the corpus.
 	Then vectorize your train and test data based on your vocabulary dictionaries.
@@ -106,10 +106,11 @@ def get_data(non_polite_training_file, polite_training_file, non_polite_test_fil
 	# MAKE SURE YOU RETURN SOMETHING IN THIS PARTICULAR ORDER: train_polite, test_polite, train_non_polite, test_non_polite, polite_vocab, non_polite_vocab, eng_padding_index
 
 	#1) Read polite and non_polite Data for training and testing (see read_data)
-    non_polite_train = read_data(non_polite_training_file)
-    polite_train = read_data(polite_training_file)
-    non_polite_test = read_data(non_polite_test_file)
-    polite_test = read_data(polite_test_file)
+    # non_polite_train = read_data(non_polite_training_file)
+    # polite_train = read_data(polite_training_file)
+    # non_polite_test = read_data(non_polite_test_file)
+    # polite_test = read_data(polite_test_file)
+    non_polite_train, polite_train, non_polite_test, polite_test = change_data()
     
     # tr_length = []
     # for i in non_polite_train:
@@ -163,8 +164,8 @@ def get_data(non_polite_training_file, polite_training_file, non_polite_test_fil
     return polite_train_ids, polite_test_ids, non_polite_train_ids, non_polite_test_ids, polite_vocab, non_polite_vocab, polite_pad_token_idx
 
 print("Running preprocessing...")
-data_dir   = '../tag-and-generate-data-prep/data/catcher/'
-file_names = ('non_polite_train', 'polite_train', 'non_polite_test', 'polite_test')
-file_paths = [f'{data_dir}/{fname}' for fname in file_names]
-polite_train, polite_test, non_polite_train, non_polite_test, polite_vocab, non_polite_vocab, POLITE_PADDING_INDEX = get_data(*file_paths)
+# data_dir   = '../tag-and-generate-data-prep/data/catcher/'
+# file_names = ('non_polite_train', 'polite_train', 'non_polite_test', 'polite_test')
+# file_paths = [f'{data_dir}/{fname}' for fname in file_names]
+polite_train, polite_test, non_polite_train, non_polite_test, polite_vocab, non_polite_vocab, POLITE_PADDING_INDEX = get_data()
 print("Preprocessing complete.")

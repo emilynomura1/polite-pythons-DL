@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tp
 
 def read_data(file_name):
 	"""

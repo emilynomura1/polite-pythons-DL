@@ -3,7 +3,7 @@ import tensorflow as tf
 from collections import Counter
 #from attenvis import AttentionVis
 #av = AttentionVis()
-from change_data import change_data
+from get_final_data import get_final_data
 
 ##########DO NOT CHANGE#####################
 PAD_TOKEN = "*PAD*"
@@ -72,19 +72,6 @@ def convert_to_id(vocab, sentences):
     # print(len(sentences), print(len(vocab)))
     return np.stack([[vocab[word] if word in vocab else vocab[UNK_TOKEN] for word in sentence] for sentence in sentences])
 
-
-# def read_data(file_name):
-# 	"""
-# 	DO NOT CHANGE
-#     Load text data from file
-# 	:param file_name:  string, name of data file
-# 	:return: list of sentences, each a list of words split on whitespace
-#     """
-# 	text = []
-# 	with open(file_name, 'rt', encoding='latin') as data_file:
-# 		for line in data_file: text.append(line.split())
-# 	return text
-
 #@av.get_data_func
 def get_data():
     """
@@ -103,44 +90,10 @@ def get_data():
 	non_polite vocab (Dict containg word->index mapping),
 	polite padding ID (the ID used for *PAD* in the polite vocab. This will be used for masking loss)\
     """
-	# MAKE SURE YOU RETURN SOMETHING IN THIS PARTICULAR ORDER: train_polite, test_polite, train_non_polite, test_non_polite, polite_vocab, non_polite_vocab, eng_padding_index
 
-	#1) Read polite and non_polite Data for training and testing (see read_data)
-    # non_polite_train = read_data(non_polite_training_file)
-    # polite_train = read_data(polite_training_file)
-    # non_polite_test = read_data(non_polite_test_file)
-    # polite_test = read_data(polite_test_file)
-    non_polite_train, polite_train, non_polite_test, polite_test = change_data()
+	#1) Read tokenized polite and non_polite Data for training and testing
+    non_polite_train, polite_train, non_polite_test, polite_test = get_final_data() #change this later
     
-    # tr_length = []
-    # for i in non_polite_train:
-    #     tr_length.append(len(i))
-    # tr_length_arr = np.array(tr_length)
-    # train_ind = np.where(tr_length_arr<=50)[0]
-    # non_polite_train = np.asarray(non_polite_train)
-    # non_polite_train = non_polite_train[train_ind]
-    # polite_train = np.asarray(polite_train)
-    # polite_train = polite_train[train_ind]
-    # test_length = []
-    # for sentence in polite_train:
-    #     test_length.append(len(sentence))
-    # print(max(test_length))
-
-    # te_length = []
-    # for i in non_polite_test:
-    #     te_length.append(len(i))
-    # te_length_arr = np.array(te_length)
-    # test_ind = np.where(te_length_arr<=50)[0]
-    # non_polite_test = np.asarray(non_polite_test)
-    # non_polite_test = non_polite_test[test_ind]
-    # polite_test = np.asarray(polite_test)
-    # polite_test = polite_test[test_ind]
-    # test_length = []
-    # for sentence in polite_test:
-    #     test_length.append(len(sentence))
-    # print(max(test_length))
-
-
 	#2) Pad training data (see pad_corpus)
     non_polite_train_padded, polite_train_padded = pad_corpus(non_polite_train, polite_train)
 

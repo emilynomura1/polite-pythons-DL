@@ -92,13 +92,14 @@ def get_data():
     """
 
 	#1) Read tokenized polite and non_polite Data for training and testing
-    non_polite_train, polite_train, non_polite_test, polite_test = get_final_data() #change this later
+    non_polite_train, polite_train, non_polite_test, polite_test = get_final_data()
     
 	#2) Pad training data (see pad_corpus)
     non_polite_train_padded, polite_train_padded = pad_corpus(non_polite_train, polite_train)
 
 	#3) Pad testing data (see pad_corpus)
     non_polite_test_padded, polite_test_padded = pad_corpus(non_polite_test, polite_test)
+    # print(non_polite_test_padded[0:50])
 
 	#4) Build vocab for non_polite (see build_vocab)
     non_polite_vocab, non_polite_pad_token_idx = build_vocab(non_polite_train_padded)
@@ -116,9 +117,10 @@ def get_data():
     
     return polite_train_ids, polite_test_ids, non_polite_train_ids, non_polite_test_ids, polite_vocab, non_polite_vocab, polite_pad_token_idx
 
-print("Running preprocessing...")
+#print("Running preprocessing...")
 # data_dir   = '../tag-and-generate-data-prep/data/catcher/'
 # file_names = ('non_polite_train', 'polite_train', 'non_polite_test', 'polite_test')
 # file_paths = [f'{data_dir}/{fname}' for fname in file_names]
-polite_train, polite_test, non_polite_train, non_polite_test, polite_vocab, non_polite_vocab, POLITE_PADDING_INDEX = get_data()
-print("Preprocessing complete.")
+#polite_train, polite_test, non_polite_train, non_polite_test, polite_vocab, non_polite_vocab, POLITE_PADDING_INDEX = get_data()
+#print(polite_train.shape, polite_test.shape, non_polite_train.shape, non_polite_test.shape)
+#print("Preprocessing complete.")

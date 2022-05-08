@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+#from nltk.translate.bleu_score import sentence_bleu
 
 class RNN_Seq2Seq(tf.keras.Model):
 	def __init__(self, french_window_size, french_vocab_size, english_window_size, english_vocab_size):
@@ -14,53 +15,51 @@ class RNN_Seq2Seq(tf.keras.Model):
 
 		# TODO:
 		# 1) Define any hyperparameters
-		self.learning_rate = 0.01
+		self.learning_rate = 0.001
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
 
 		# Define batch size and optimizer/learning rate
-		self.batch_size = 200 # You can change this
-		self.embedding_size = 32 # You should change this
+		self.batch_size = 100
+		self.embedding_size = 256
 
 		# 2) Define embeddings, encoder, decoder, and feed forward layers
+
 		def make_variables(*dims, initializer=tf.random.normal):
 			return tf.Variable(initializer(dims, mean=0, stddev=0.01, dtype=tf.float32))
-		self.fr_embedding_matrix = make_variables(self.french_vocab_size, self.embedding_size)
-		self.eng_embedding_matrix = make_variables(self.english_vocab_size, self.embedding_size)
-		self.encoder_rnn = tf.keras.layers.LSTM(self.embedding_size, return_sequences=True, return_state=True)
-		self.decoder_rnn = tf.keras.layers.LSTM(self.embedding_size, return_sequences=True, return_state=True)
-		self.dense1 = tf.keras.layers.Dense(60, activation=tf.nn.relu, use_bias=True) #80
-		self.dense2 = tf.keras.layers.Dense(100, activation=tf.nn.relu, use_bias=True) #150
-		self.dense3 = tf.keras.layers.Dense(self.english_vocab_size)
-		self.dropout = tf.keras.layers.Dropout(rate=0.2)
+		self.input_embedding = make_variables(self.french_vocab_size, self.embedding_size)
+		self.output_embedding = make_variables(self.english_vocab_size, self.embedding_size)
+
+		# self.input_embedding = tf.keras.layers.Embedding(self.french_vocab_size,self.embedding_size)
+		self.encoder_gru = tf.keras.layers.GRU(200,return_sequences=True,return_state=True,recurrent_initializer='glorot_uniform')
+		# self.output_embedding = tf.keras.layers.Embedding(self.english_vocab_size, self.embedding_size)
+		self.decoder_gru = tf.keras.layers.GRU(200,return_sequences=True,return_state=True,recurrent_initializer='glorot_uniform')
+
+		self.additive_attention = tf.keras.layers.AdditiveAttention()
+		self.dense1= tf.keras.layers.Dense(self.embedding_size, activation=tf.math.tanh, use_bias=False)
+		self.densef = tf.keras.layers.Dense(self.english_vocab_size)
+
 
 	@tf.function
-	def call(self, encoder_input, decoder_input):
+	def call(self, encoder_input, decoder_input, mask):
 		"""
 		:param encoder_input: batched ids corresponding to French sentences
 		:param decoder_input: batched ids corresponding to English sentences
 		:return prbs: The 3d probabilities as a tensor, [batch_size x window_size x english_vocab_size]
-		"""
+        """
 
-		# TODO:
-		# 1) Pass your French sentence embeddings to your encoder
-		#https://keras.io/guides/working_with_rnns/
-
-		encoder_embed = tf.nn.embedding_lookup(self.fr_embedding_matrix, encoder_input)
-		output, state_h, state_c = self.encoder_rnn(encoder_embed)
-		encoder_final_state = [state_h, state_c]
-
-		# 2) Pass your English sentence embeddings, and final state of your encoder, to your decoder
-		decoder_embed = tf.nn.embedding_lookup(self.eng_embedding_matrix, decoder_input)
-		decoder_output, _, _ = self.decoder_rnn(decoder_embed, initial_state=encoder_final_state)
-
-		# 3) Apply dense layer(s) to the decoder out to generate probabilities
-		linear1 = self.dense1(decoder_output)
-		linear1 = self.dropout(linear1)
-		linear2 = self.dense2(linear1)
-		linear2 = self.dropout(linear2)
-		linear3 = self.dense3(linear2)
-		prbs = tf.nn.softmax(linear3)
-		# print(self.english_vocab_size, prbs.shape)
+		# input_embeddings = self.input_embedding(encoder_input)
+		input_embeddings = tf.nn.embedding_lookup(self.input_embedding, encoder_input)
+		gru1,state = self.encoder_gru(input_embeddings, initial_state = None)
+		output_embeddings = tf.nn.embedding_lookup(self.output_embedding, decoder_input)
+		# output_embeddings = self.output_embedding(decoder_input)
+		gru2,state = self.decoder_gru(output_embeddings,initial_state = None)
+		query_mask = tf.ones(tf.shape(gru2)[:-1], dtype=bool)
+		value_mask = tf.convert_to_tensor(mask, dtype=bool)
+		# print(query_mask.shape, value_mask.shape)
+		att_output = self.additive_attention([gru2,gru1], mask=[query_mask, value_mask], training=True, return_attention_scores=False)
+		dense1 = self.dense1(att_output)
+		logits = self.densef(dense1)
+		prbs = tf.nn.softmax(logits)
 
 		return prbs
 
@@ -93,3 +92,46 @@ class RNN_Seq2Seq(tf.keras.Model):
 
 		loss = tf.math.reduce_sum(tf.boolean_mask(tf.keras.losses.sparse_categorical_crossentropy(labels, prbs, from_logits=False), mask))
 		return loss
+
+	# def bleu_score(self, prbs, labels, mask):
+	# 	"""
+	# 	Calculates the bleu_score
+	# 	"""
+	# 	bleus = []
+	# 	for i in range(len(labels)):
+	# 		bleus += sentence_bleu(prbs[i:],labels[i])
+		
+	# 	return bleus/len(labels)
+
+
+	# def decode_response(self, test_input):
+	# 	#Getting the output states to pass into the decoder
+	# 	states_value = se.call(test_input)
+	# 	encoder_embed = tf.nn.embedding_lookup(self.fr_embedding_matrix, encoder_input)
+	# 	output, state_h, state_c = self.encoder_rnn(encoder_embed)
+	# 	encoder_final_state = [state_h, state_c]
+		
+	# 	#Generating empty target sequence of length 1
+	# 	target_seq = np.zeros((1, 1, num_decoder_tokens))
+	# 	#Setting the first token of target sequence with the start token
+	# 	target_seq[0, 0, target_features_dict['<START>']] = 1.
+
+	# 	#A variable to store our response word by word
+	# 	decoded_sentence = ''
+
+	# 	stop_condition = False
+	# 	while not stop_condition:
+	# 	#Predicting output tokens with probabilities and states
+	# 	output_tokens, hidden_state, cell_state = decoder_model.predict([target_seq] + states_value)
+	# 	#Choosing the one with highest probability
+	# 	sampled_token_index = np.argmax(output_tokens[0, -1, :])
+	# 	sampled_token = reverse_target_features_dict[sampled_token_index]
+	# 	decoded_sentence += " " + sampled_token#Stop if hit max length or found the stop token
+	# 	if (sampled_token == '<END>' or len(decoded_sentence) > max_decoder_seq_length):
+	# 	stop_condition = True
+	# 	#Update the target sequence
+	# 	target_seq = np.zeros((1, 1, num_decoder_tokens))
+	# 	target_seq[0, 0, sampled_token_index] = 1.
+	# 	#Update states
+	# 	states_value = [hidden_state, cell_state]
+	# 	return decoded_sentence

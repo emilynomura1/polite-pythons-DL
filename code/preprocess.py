@@ -115,7 +115,7 @@ def get_data():
     non_polite_train_ids = convert_to_id(non_polite_vocab, non_polite_train_padded)
     non_polite_test_ids = convert_to_id(non_polite_vocab, non_polite_test_padded)
     
-    return polite_train_ids, polite_test_ids, non_polite_train_ids, non_polite_test_ids, polite_vocab, non_polite_vocab, polite_pad_token_idx
+    return polite_train_ids, polite_test_ids, non_polite_train_ids, non_polite_test_ids, polite_vocab, non_polite_vocab, polite_pad_token_idx, non_polite_pad_token_idx
 
 #print("Running preprocessing...")
 # data_dir   = '../tag-and-generate-data-prep/data/catcher/'

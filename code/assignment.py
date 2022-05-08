@@ -10,9 +10,9 @@ import random
 
 #from attenvis import AttentionVis
 #av = AttentionVis()
-#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
-def train(model, train_french, train_english, eng_padding_index):
+def train(model, train_french, train_english, eng_padding_index, fr_padding_index):
 	"""
 	Runs through one epoch - all training examples.
 	:param model: the initialized model to use for forward and backward pass
@@ -47,17 +47,18 @@ def train(model, train_french, train_english, eng_padding_index):
 
 		# Create mask within for-loop
 		# mask = [i != eng_padding_index for i in decoder_label_batch]
+		input_mask = [np.where(np.array(i)==fr_padding_index, False, True) for i in encoder_input_batch]
 		mask = [np.where(np.array(i)==eng_padding_index, 0, 1) for i in decoder_label_batch]
 
 		# Forward and backward pass
 		with tf.GradientTape() as tape:
-			probs = model.call(encoder_input_batch, decoder_input_batch)
+			probs = model.call(encoder_input_batch, decoder_input_batch, input_mask)
 			loss = model.loss_function(probs, decoder_label_batch, mask)
 		gradients = tape.gradient(loss, model.trainable_variables)
 		model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
 #@av.test_func
-def test(model, test_french, test_english, eng_padding_index):
+def test(model, test_french, test_english, eng_padding_index, fr_padding_index):
 	"""
 	Runs through one epoch - all testing examples.
 	:param model: the initialized model to use for forward and backward pass
@@ -77,6 +78,7 @@ def test(model, test_french, test_english, eng_padding_index):
 	test_accuracy = 0
 	num_valid_total = 0
 	sum_acc = 0
+	test_bleu = 0
 
 	# Batch testing
 	for i in range(0, len(test_french), model.batch_size):
@@ -89,21 +91,26 @@ def test(model, test_french, test_english, eng_padding_index):
 
 		# Create mask within for-loop
 		# mask = [i != eng_padding_index for i in decoder_label_batch]
+		
+		input_mask = [np.where(np.array(i)==fr_padding_index, False, True) for i in encoder_input_batch]
 		mask = [np.where(np.array(i)==eng_padding_index, 0, 1) for i in decoder_label_batch]
 
 		num_valid_per_batch = tf.math.reduce_sum(mask) #get number of valid tokens (non-pad values) per batch
 		num_valid_total += num_valid_per_batch #iteratively sum to get total number of valid tokens
 
 		# Call model, compute loss & accuracy
-		probs = model.call(encoder_input_batch, decoder_input_batch)
+		probs = model.call(encoder_input_batch, decoder_input_batch, input_mask)
 
 		test_loss += model.loss_function(probs, decoder_label_batch, mask)
 		test_accuracy = model.accuracy_function(probs, decoder_label_batch, mask)
+		# test_bleu += model.bleu_score(probs, decoder_label_batch, mask)
 		sum_acc += tf.math.multiply(test_accuracy, tf.cast(num_valid_per_batch, dtype=tf.float32))
 
-	accuracy = tf.math.divide(sum_acc, tf.cast(num_valid_total, dtype=tf.float32)) #total number of correctly predicted words/total number of valid tokens
+	accuracy = tf.math.divide(sum_acc, tf.cast(num_valid_total, dtype=tf.float32))
+	# bleu = tf.math.divide(test_bleu, tf.cast(num_valid_total, dtype=tf.float32)) #total number of correctly predicted words/total number of valid tokens
 	perplexity = tf.math.exp(tf.math.divide(test_loss, tf.cast(num_valid_total, dtype=tf.float32))) #total loss/total number of valid tokens
-	return perplexity, accuracy
+	
+	return perplexity, accuracy#, bleu
 
 def main():
 	
@@ -123,8 +130,7 @@ def main():
 	#data_dir   = '../../data'
 	#file_names = ('fls.txt', 'els.txt', 'flt.txt', 'elt.txt')
 	#file_paths = [f'{data_dir}/{fname}' for fname in file_names]
-	train_eng,test_eng, train_frn,test_frn, vocab_eng,vocab_frn,eng_padding_index = get_data()
-
+	train_eng,test_eng, train_frn,test_frn, vocab_eng,vocab_frn,eng_padding_index,fr_padding_index = get_data()
 	print("Preprocessing complete.")
 
 	model = RNN_Seq2Seq(52, len(vocab_frn), 52, len(vocab_eng))
@@ -133,13 +139,22 @@ def main():
 	# Train and Test Model for 1 epoch.
 
 	# Drop extra sentences since batch_size is not evenly divisible
-	train_eng = train_eng[:-55]
-	train_frn = train_frn[:-55]
-	test_eng = test_eng[:-24]
-	test_frn = test_frn[:-24]
+	# train_eng = train_eng[:-55]
+	# train_frn = train_frn[:-55]
+	# test_eng = test_eng[:-25]
+	# test_frn = test_frn[:-25]
 
-	train(model, train_frn, train_eng, eng_padding_index)
-	perplexity, accuracy = test(model, test_frn, test_eng, eng_padding_index)
+	# Run on a subset of data
+	train_eng = train_eng[0:10000]
+	train_frn = train_frn[0:10000]
+	test_eng = test_eng[0:2000]
+	test_frn = test_frn[0:2000]
+
+	print("train start")
+	train(model, train_frn, train_eng, eng_padding_index, fr_padding_index)
+	print("train finish")
+
+	perplexity, accuracy = test(model, test_frn, test_eng, eng_padding_index, fr_padding_index)
 	print("Perplexity: ", perplexity, "Accuracy: ", accuracy)
 
 	# Visualize a sample attention matrix from the test set

@@ -49,10 +49,10 @@ class RNN_Seq2Seq(tf.keras.Model):
 
 		# input_embeddings = self.input_embedding(encoder_input)
 		input_embeddings = tf.nn.embedding_lookup(self.input_embedding, encoder_input)
-		gru1,state = self.encoder_gru(input_embeddings, initial_state = None)
+		gru1,state1 = self.encoder_gru(input_embeddings, initial_state = None)
 		output_embeddings = tf.nn.embedding_lookup(self.output_embedding, decoder_input)
 		# output_embeddings = self.output_embedding(decoder_input)
-		gru2,state = self.decoder_gru(output_embeddings,initial_state = None)
+		gru2,state2 = self.decoder_gru(output_embeddings,initial_state = state1)
 		query_mask = tf.ones(tf.shape(gru2)[:-1], dtype=bool)
 		value_mask = tf.convert_to_tensor(mask, dtype=bool)
 		# print(query_mask.shape, value_mask.shape)

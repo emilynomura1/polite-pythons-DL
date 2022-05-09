@@ -112,6 +112,38 @@ def test(model, test_french, test_english, eng_padding_index, fr_padding_index):
 	
 	return perplexity, accuracy#, bleu
 
+def translate(model, sentence, vocab_frn, vocab_eng, fr_padding_index, toword):
+	# padded, ignore1 = pad_corpus(sentence, None)
+	# tokenized = convert_to_id(vocab_frn, padded)
+	sentence = tf.convert_to_tensor(sentence)
+	sentence = tf.reshape(sentence, (1, len(sentence)))
+	encoded, state1 = model.encoder_gru(tf.nn.embedding_lookup(model.input_embedding, sentence))
+	decoder_sentence = tf.expand_dims([vocab_eng['*START*']], 0)
+	result = []
+	input_mask = [np.where(np.array(i)==fr_padding_index, False, True) for i in sentence]
+	for i in range(model.english_window_size):
+		#print(decoder_sentence)
+		output_embeddings = tf.nn.embedding_lookup(model.output_embedding, decoder_sentence)
+		gru2,state = model.decoder_gru(output_embeddings,initial_state = state1)
+		query_mask = tf.ones(tf.shape(gru2)[:-1], dtype=bool)
+		value_mask = tf.convert_to_tensor(input_mask, dtype=bool)
+		att_output = model.additive_attention([gru2,encoded], mask=[query_mask, value_mask], training=True, return_attention_scores=False)
+		dense1 = model.dense1(att_output)
+		logits = model.densef(dense1)
+		prbs = tf.nn.softmax(logits) # (1, 1, n)
+		pred_id=np.random.choice(np.arange(prbs.shape[2]), p = np.asarray(prbs).flatten())
+		# print(type(pred_id))
+		# predicted_id = tf.argmax(prbs[0]).numpy()
+		# print(type(prbs), prbs.shape)
+		# print(type(predicted_id, predicted_id.shape))
+		print(toword[pred_id])
+		result = result+ [toword[pred_id]]
+		if (toword[pred_id]=='*STOP*'):
+			return result
+		decoder_sentence = tf.expand_dims([pred_id], 0)
+		#print(decoder_sentence)
+	return result
+
 def main():
 	
 	#model_types = {"RNN" : RNN_Seq2Seq, "TRANSFORMER" : Transformer_Seq2Seq}
@@ -132,7 +164,7 @@ def main():
 	#file_paths = [f'{data_dir}/{fname}' for fname in file_names]
 	train_eng,test_eng, train_frn,test_frn, vocab_eng,vocab_frn,eng_padding_index,fr_padding_index = get_data()
 	print("Preprocessing complete.")
-
+	print(train_eng.shape, test_eng.shape, train_frn.shape, test_frn.shape)
 	model = RNN_Seq2Seq(52, len(vocab_frn), 52, len(vocab_eng))
 
 	# TODO:
@@ -145,17 +177,26 @@ def main():
 	# test_frn = test_frn[:-25]
 
 	# Run on a subset of data
-	train_eng = train_eng[0:10000]
-	train_frn = train_frn[0:10000]
-	test_eng = test_eng[0:2000]
-	test_frn = test_frn[0:2000]
+	train_eng = train_eng[0:50000]
+	train_frn = train_frn[0:50000]
+	test_eng = test_eng[0:1000]
+	test_frn = test_frn[0:1000]
 
 	print("train start")
 	train(model, train_frn, train_eng, eng_padding_index, fr_padding_index)
 	print("train finish")
 
+	# Save trained model
+	# model.save('../models/model2', save_format='tf')
+
+
 	perplexity, accuracy = test(model, test_frn, test_eng, eng_padding_index, fr_padding_index)
 	print("Perplexity: ", perplexity, "Accuracy: ", accuracy)
+
+	sentence = test_frn[4]
+	toword = {v: k for k, v in vocab_eng.items()}
+	result = translate(model, sentence, vocab_frn, vocab_eng, fr_padding_index, toword)
+	print(result)
 
 	# Visualize a sample attention matrix from the test set
 	# Only takes effect if you enabled visualizations above

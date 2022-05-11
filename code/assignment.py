@@ -120,9 +120,9 @@ def translate(model, sentence, non_polite_vocab, polite_vocab, non_polite_paddin
 		# print(type(prbs), prbs.shape)
 		# print(type(predicted_id, predicted_id.shape))
 		#print(toword[pred_id])
-		result = result+ [toword[pred_id]]
 		if (toword[pred_id]=='*STOP*'):
 			return result
+		result = result+ [toword[pred_id]]
 		decoder_sentence = tf.expand_dims([pred_id], 0)
 		#print(decoder_sentence)
 	return result
@@ -172,25 +172,31 @@ def main():
 	bleu = []
 	true_sentence = []
 	pred_sentence = []
-	to_translate = non_polite_test[0:1]
-	p = polite_test[0:100]
+	to_translate = non_polite_test[0:2000]
+	p = polite_test[0:2000]
 	for i in range(len(p)):
 		s = []
 		sentence = p[i]
 		non = to_translate[i]
 		for word in sentence:
 			if word != polite_padding_index:
-				s.append(toword[word])
-				print(word, toword[word])
+				w = toword[word]
+				if (w != "*START*" and w!="*STOP*"):
+					s.append(toword[word])
+				#print(word, toword[word])
 		result = translate(model, non, non_polite_vocab, polite_vocab, non_polite_padding_index, toword)
 		true_sentence.append(s)
 		pred_sentence.append(result)
 		bleu.append(sentence_bleu(s,result, smoothing_function = smooth))		
-				
 
 	
 	print(np.mean(np.asarray(bleu)))
 	print(true_sentence[10], pred_sentence[10])
+	print(true_sentence[27], pred_sentence[27])
+	print(true_sentence[333], pred_sentence[333])
+	print(true_sentence[450], pred_sentence[450])
+	print(true_sentence[666], pred_sentence[666])
+	print(true_sentence[800], pred_sentence[800])
 	
 
 if __name__ == '__main__':

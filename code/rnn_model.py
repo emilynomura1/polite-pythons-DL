@@ -16,7 +16,7 @@ class RNN_Seq2Seq(tf.keras.Model):
 		self.learning_rate = 0.001
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
 		self.batch_size = 100
-		self.embedding_size = 256 #maybe increase
+		self.embedding_size = 512 #maybe increase
 
 		# Define embeddings, encoder, decoder, and feed forward layers
 		def make_variables(*dims, initializer=tf.random.normal):
@@ -28,9 +28,9 @@ class RNN_Seq2Seq(tf.keras.Model):
 		self.decoder_gru = tf.keras.layers.GRU(200,return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
 
 		self.additive_attention = tf.keras.layers.AdditiveAttention()
-		self.dense1 = tf.keras.layers.Dense(self.embedding_size, activation='relu', use_bias=False) #change use_bias to True
-		self.dense2 = tf.keras.layers.Dense(1000, activation='relu', use_bias=False)
-		self.dense3 = tf.keras.layers.Dense(4000, activation='relu', use_bias=False) #maybe decrease; doesn't need to be this big
+		self.dense1 = tf.keras.layers.Dense(self.embedding_size, activation='relu', use_bias=True) #change use_bias to True
+		self.dense2 = tf.keras.layers.Dense(1000, activation='relu', use_bias=True)
+		self.dense3 = tf.keras.layers.Dense(2000, activation='relu', use_bias=True) #maybe decrease; doesn't need to be this big
 		self.densef = tf.keras.layers.Dense(self.polite_vocab_size)
 
 

@@ -14,11 +14,11 @@ def read_data(file_name):
 	return text
 
 def get_final_data():
-    non_polite_train = read_data('../tag-and-generate-data-prep/data/catcher/tokenized_non_polite_train_10.txt')
-    polite_train = read_data('../tag-and-generate-data-prep/data/catcher/tokenized_polite_train_10.txt')
-    non_polite_test = read_data('../tag-and-generate-data-prep/data/catcher/tokenized_non_polite_test_10.txt')
-    polite_test = read_data('../tag-and-generate-data-prep/data/catcher/tokenized_polite_test_10.txt')
+    non_polite_train = read_data('../tag-and-generate-data-prep/data/catcher/tokenized_non_polite_train_20.txt')
+    polite_train = read_data('../tag-and-generate-data-prep/data/catcher/tokenized_polite_train_20.txt')
+    non_polite_test = read_data('../tag-and-generate-data-prep/data/catcher/tokenized_non_polite_test_20.txt')
+    polite_test = read_data('../tag-and-generate-data-prep/data/catcher/tokenized_polite_test_20.txt')
 
     return non_polite_train, polite_train, non_polite_test, polite_test
+	
 # non_polite_train, polite_train, non_polite_test, polite_test = get_final_data()
-# print(non_polite_train[0:5])

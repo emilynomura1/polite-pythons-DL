@@ -3,62 +3,57 @@ import tensorflow as tf
 #from nltk.translate.bleu_score import sentence_bleu
 
 class RNN_Seq2Seq(tf.keras.Model):
-	def __init__(self, french_window_size, french_vocab_size, english_window_size, english_vocab_size):
-		###### DO NOT CHANGE ##############
+	def __init__(self, non_polite_window_size, non_polite_vocab_size, polite_window_size, polite_vocab_size):
+
 		super(RNN_Seq2Seq, self).__init__()
-		self.french_vocab_size = french_vocab_size # The size of the French vocab
-		self.english_vocab_size = english_vocab_size # The size of the English vocab
+		self.non_polite_vocab_size = non_polite_vocab_size # The size of the non-polite vocab
+		self.polite_vocab_size = polite_vocab_size # The size of the polite vocab
 
-		self.french_window_size = french_window_size # The French window size
-		self.english_window_size = english_window_size # The English window size
-		######^^^ DO NOT CHANGE ^^^##################
+		self.non_polite_window_size = non_polite_window_size # The non-polite window size
+		self.polite_window_size = polite_window_size # The polite window size
 
-		# TODO:
-		# 1) Define any hyperparameters
+		# Define hyperparameters
 		self.learning_rate = 0.001
 		self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-
-		# Define batch size and optimizer/learning rate
 		self.batch_size = 100
-		self.embedding_size = 256
+		self.embedding_size = 256 #maybe increase
 
-		# 2) Define embeddings, encoder, decoder, and feed forward layers
-
+		# Define embeddings, encoder, decoder, and feed forward layers
 		def make_variables(*dims, initializer=tf.random.normal):
 			return tf.Variable(initializer(dims, mean=0, stddev=0.01, dtype=tf.float32))
-		self.input_embedding = make_variables(self.french_vocab_size, self.embedding_size)
-		self.output_embedding = make_variables(self.english_vocab_size, self.embedding_size)
+		self.input_embedding = make_variables(self.non_polite_vocab_size, self.embedding_size)
+		self.output_embedding = make_variables(self.polite_vocab_size, self.embedding_size)
 
-		# self.input_embedding = tf.keras.layers.Embedding(self.french_vocab_size,self.embedding_size)
-		self.encoder_gru = tf.keras.layers.GRU(200,return_sequences=True,return_state=True,recurrent_initializer='glorot_uniform')
-		# self.output_embedding = tf.keras.layers.Embedding(self.english_vocab_size, self.embedding_size)
-		self.decoder_gru = tf.keras.layers.GRU(200,return_sequences=True,return_state=True,recurrent_initializer='glorot_uniform')
+		self.encoder_gru = tf.keras.layers.GRU(200,return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
+		self.decoder_gru = tf.keras.layers.GRU(200,return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
 
 		self.additive_attention = tf.keras.layers.AdditiveAttention()
-		self.dense1= tf.keras.layers.Dense(self.embedding_size, activation=tf.math.tanh, use_bias=False)
-		self.densef = tf.keras.layers.Dense(self.english_vocab_size)
+		self.dense1 = tf.keras.layers.Dense(self.embedding_size, activation='relu', use_bias=False) #change use_bias to True
+		self.dense2 = tf.keras.layers.Dense(1000, activation='relu', use_bias=False)
+		self.dense3 = tf.keras.layers.Dense(4000, activation='relu', use_bias=False) #maybe decrease; doesn't need to be this big
+		self.densef = tf.keras.layers.Dense(self.polite_vocab_size)
 
 
 	@tf.function
 	def call(self, encoder_input, decoder_input, mask):
 		"""
-		:param encoder_input: batched ids corresponding to French sentences
-		:param decoder_input: batched ids corresponding to English sentences
-		:return prbs: The 3d probabilities as a tensor, [batch_size x window_size x english_vocab_size]
+		:param encoder_input: batched ids corresponding to non-polite sentences
+		:param decoder_input: batched ids corresponding to polite sentences
+		:return prbs: The 3d probabilities as a tensor, [batch_size x window_size x polite_vocab_size]
         """
 
-		# input_embeddings = self.input_embedding(encoder_input)
 		input_embeddings = tf.nn.embedding_lookup(self.input_embedding, encoder_input)
-		gru1,state1 = self.encoder_gru(input_embeddings, initial_state = None)
+		gru1, state1 = self.encoder_gru(input_embeddings, initial_state=None)
+		#gru1b, state1b = self.encoder_gru(input_embeddings, initial_state=state1)
 		output_embeddings = tf.nn.embedding_lookup(self.output_embedding, decoder_input)
-		# output_embeddings = self.output_embedding(decoder_input)
-		gru2,state2 = self.decoder_gru(output_embeddings,initial_state = state1)
+		gru2, state2 = self.decoder_gru(output_embeddings, initial_state=state1)
 		query_mask = tf.ones(tf.shape(gru2)[:-1], dtype=bool)
 		value_mask = tf.convert_to_tensor(mask, dtype=bool)
-		# print(query_mask.shape, value_mask.shape)
 		att_output = self.additive_attention([gru2,gru1], mask=[query_mask, value_mask], training=True, return_attention_scores=False)
 		dense1 = self.dense1(att_output)
-		logits = self.densef(dense1)
+		dense2 = self.dense2(dense1)
+		dense3 = self.dense3(dense2)
+		logits = self.densef(dense3)
 		prbs = tf.nn.softmax(logits)
 
 		return prbs
@@ -67,13 +62,12 @@ class RNN_Seq2Seq(tf.keras.Model):
 		"""
 		DO NOT CHANGE
 		Computes the batch accuracy
-		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x english_vocab_size]
+		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x polite_vocab_size]
 		:param labels:  integer tensor, word prediction labels [batch_size x window_size]
 		:param mask:  tensor that acts as a padding mask [batch_size x window_size]
 		:return: scalar tensor of accuracy of the batch between 0 and 1
 		"""
 
-		# decoded_symbols = tf.argmax(input=prbs, axis=2)
 		decoded_symbols = tf.cast(tf.argmax(input=prbs, axis=2), dtype=tf.float32)
 		labels = tf.cast(labels, dtype=tf.float32)
 		accuracy = tf.reduce_mean(tf.boolean_mask(tf.cast(tf.equal(decoded_symbols, labels), dtype=tf.float32),mask))
@@ -84,7 +78,7 @@ class RNN_Seq2Seq(tf.keras.Model):
 		"""
 		Calculates the total model cross-entropy loss after one forward pass.
 		Please use reduce sum here instead of reduce mean to make things easier in calculating per symbol accuracy.
-		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x english_vocab_size]
+		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x polite_vocab_size]
 		:param labels:  integer tensor, word prediction labels [batch_size x window_size]
 		:param mask:  tensor that acts as a padding mask [batch_size x window_size]
 		:return: the loss of the model as a tensor

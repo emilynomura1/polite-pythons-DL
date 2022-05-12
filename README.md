@@ -6,9 +6,9 @@ The Politeness Dataset from the tag and generate paper by Madaan et al. is used.
 Detailed instructions that outline how to acquire the dataset and generate parallel corpuses of training and testing data can be found in the original tag-and-generate README file located [here](https://github.com/emilynomura1/polite-pythons-DL/blob/master/tag-and-generate-README.md).
 ## Model Architecture
 The model architecture is a seq2seq model using an encoder, decoder, and additive attention layer. The encoder and decoder both contain an embedding layer and a gated recurrent unit (GRU). Both encoder and decoder GRUs have an output size of 200. A query mask and value mask are formed, and additive attention is calculated using the GRU outputs from the encoder and decoder. Three feed-forward layers are applied with a relu activation function, and a final dense layer is applied with a softmax activation in order to output the probabilities for each word in the vocabulary.
+![Model Architecture](https://github.com/emilynomura1/polite-pythons-DL/blob/master/figures/architecture.png?raw=true)
 ### Evaluation Metrics
 Per-symbol-accuracy, perplexity and bleu-score (BiLingual Evaluation Understudy) are calculated for the baseline and final model. All metrics are common evaluation metrics in the machine translation and style transfer realm.
-![Model Architecture](https://github.com/emilynomura1/polite-pythons-DL/blob/master/figures/architecture.png?raw=true)
 ## Results
 Our final model using a RNN with attention achieved a perplexity of 4.95 and a per-symbol accuracy of 73%. Perplexity and per-symbol accuracy are compared to the baseline RNN model in the table below. The loss per batch for the RNN with attention decreases steadily from 18,000 to around 400.
 ![Evaluation Table](https://github.com/emilynomura1/polite-pythons-DL/blob/master/figures/eval-table.png?raw=true)
